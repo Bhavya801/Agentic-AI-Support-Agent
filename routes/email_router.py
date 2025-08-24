@@ -3,7 +3,7 @@ from services.email_handler import process_emails_job
 
 router = APIRouter()
 
-@router.get("/processmail")
+@router.get("/support/process-mail", tags=["Email Processing"])
 def process_mail():
     """
     API endpoint to trigger the email processing job.

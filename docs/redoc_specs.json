@@ -2,62 +2,48 @@
   "openapi": "3.0.0",
   "info": {
     "title": "AI-Powered Customer Support Agent",
-    "description": "This is an automated system that reads incoming customer support emails, analyzes them using a large language model, and takes an action (reply or escalate). The system runs as a scheduled cron job and interacts with external services like Trello and Firebase. This documentation describes the overall process and the data models involved.",
+    "description": "This is an automated system that processes incoming customer support emails. The system runs as a web service via Uvicorn, exposing specific endpoints, one of which is designed to be triggered by an external cron job. It analyzes emails using a large language model, then takes a corresponding action (reply or escalate). All interactions are logged to a Firebase Firestore database.",
     "version": "1.0.0"
   },
   "servers": [
     {
-      "url": "https://api.example.com",
-      "description": "Conceptual API endpoint (cron job)"
+      "url": "http://localhost:3218",
+      "description": "Local development server"
     }
   ],
   "tags": [
     {
       "name": "Cron Job",
-      "description": "The automated process that runs on a schedule."
+      "description": "Endpoint for triggering the email processing job via an external scheduler."
+    },
+    {
+      "name": "Health Check",
+      "description": "Endpoints to check the status of the service."
+    },
+    {
+      "name": "Documentation",
+      "description": "Endpoint to view the API documentation."
     }
   ],
   "paths": {
-    "/process-emails": {
-      "post": {
+    "/": {
+      "get": {
         "tags": [
-          "Cron Job"
+          "Health Check"
         ],
-        "summary": "Process incoming emails",
-        "description": "This operation is triggered by a cron job and performs the entire workflow of fetching emails, analyzing them with AI, and taking an action.",
-        "operationId": "processEmails",
-        "requestBody": {
-          "description": "The process is triggered without an external request body. All configuration is handled via environment variables.",
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "trigger": {
-                    "type": "string",
-                    "example": "cron-trigger"
-                  }
-                }
-              }
-            }
-          }
-        },
+        "summary": "Service Status",
+        "description": "Returns a simple message to confirm the service is running.",
         "responses": {
           "200": {
-            "description": "The process ran successfully. Details of the action taken (replied, escalated) are logged to the console and Firebase.",
+            "description": "Service is operational.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
-                      "type": "string",
-                      "example": "success"
-                    },
                     "message": {
                       "type": "string",
-                      "example": "Successfully processed 2 new emails."
+                      "example": "AI Support Agent Service is running. Email processing is handled by a separate cron job."
                     }
                   }
                 }
@@ -67,34 +53,52 @@
         }
       }
     },
-    "/process-emails-schedule": {
+    "/processmail": {
       "get": {
         "tags": [
           "Cron Job"
         ],
-        "summary": "Scheduler Information",
-        "description": "Provides information about the cron-like schedule that triggers the email processing job.",
+        "summary": "Trigger Email Processing",
+        "description": "This endpoint triggers the core email processing logic. It is designed to be called by an external cron service (e.g., a system cron job or a dedicated scheduler) on a regular basis to check for and handle new emails. It does not require any request body.",
+        "operationId": "triggerEmailProcessing",
         "responses": {
           "200": {
-            "description": "Scheduler information retrieved successfully.",
+            "description": "Email processing job triggered successfully. The output of the job is logged to the console.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "job_name": {
+                    "message": {
                       "type": "string",
-                      "example": "Process Emails"
-                    },
-                    "schedule": {
-                      "type": "string",
-                      "example": "Runs every 5 minutes"
-                    },
-                    "trigger_type": {
-                      "type": "string",
-                      "example": "CronTrigger"
+                      "example": "Email processing job triggered successfully."
                     }
                   }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error. The job could not be triggered due to a server-side issue."
+          }
+        }
+      }
+    },
+    "/redocs": {
+      "get": {
+        "tags": [
+          "Documentation"
+        ],
+        "summary": "API Documentation",
+        "description": "Serves this OpenAPI specification as a beautifully rendered Redoc page.",
+        "responses": {
+          "200": {
+            "description": "The Redoc page was served successfully.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string",
+                  "example": "<html>...</html>"
                 }
               }
             }
